@@ -1,0 +1,360 @@
+---
+title: "Final Project Uber Taxi for NYC"
+author: "Harshil Shinde"
+date: "2024-04-24"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+::: {.cell .markdown id="-WhpMMj_I9sw"}
+## **Uber Taxi Data Visualization in R**
+
+## Introduction
+
+Welcome to this hands-on project on Uber Taxi Data Visualization using
+R. This project is crafted to enhance understanding of machine learning,
+artificial intelligence, and data science through practical application.
+Our focus will be on the Uber Pickups in New York City dataset,
+providing a rich ground for data exploration and visualization.
+
+## Objective
+
+The core objective of this project is to delve into the Uber Pickups
+dataset, utilizing the powerful R libraries for data visualization.
+Through this project, we aim to uncover patterns, insights, and trends
+within the Uber pickups data, focusing on customer behaviors and pickup
+distributions across New York City. This exploration is not just about
+learning to visualize data but also about understanding the stories
+hidden within it.
+:::
+
+::: {.cell .code id="LYPD0vN3KV4Y"}
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tidyverse) # metapackage of all tidyverse packages
+library(knitr)
+library(kableExtra)
+library(readr)
+```
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":34}" id="36FtXxyNKmvm" outputId="030281ef-9660-4900-99a7-e5addb7f6168"}
+```{r}
+colors = c("#CC1011", "#665555", "#05a399", "#cfcaca", "#f5e840", "#0683c9", "#e075b0")
+colors
+```
+:::
+:::
+
+::: {.cell .markdown id="oz3xFA5YL012"}
+Now we shall be reading the data of taxi rides for each month
+separately. The dataset is taken from Kaggle.
+:::
+
+::: {.cell .code id="UGQnd6NAL8a9"}
+```{r}
+April <- read.csv("C://Users//hshin//OneDrive//Documents//uber-raw-data-apr14.csv")
+May <- read.csv("C://Users//hshin//OneDrive//Documents//uber-raw-data-may14.csv")
+June <- read.csv("C://Users//hshin//OneDrive//Documents//uber-raw-data-jun14.csv")
+July <- read.csv("C://Users//hshin//OneDrive//Documents//uber-raw-data-jul14.csv")
+August <- read.csv("C://Users//hshin//OneDrive//Documents//uber-raw-data-aug14.csv")
+September <- read.csv("C://Users//hshin//OneDrive//Documents//uber-raw-data-sep14.csv")
+```
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="5rjMFBtVOOye" outputId="8c996b1c-291f-479d-cbee-1aaf3da7db0d"}
+```{r}
+data <- rbind(April, May, June, July, August, September)
+cat("The dimensions of the data are:", dim(data))
+```
+
+
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":286}" id="tyIAnEmoOiNr" outputId="64f4a43e-58b6-417f-9e7e-1240edb6bdb6"}
+```{r table1, echo = TRUE}
+head(data)
+```
+
+::: {.output .display_data}
+
+
+::: {.cell .markdown id="CQxJAmbWOuPg"}
+The data contains the columns Date.Time which is a factor, Latitude and
+Longitudes which are double and Base which is factor. we will format the
+datetime into a more readable format using the Date Time conversion
+function. To save date and time, we have utilized POSIXct
+:::
+
+::: {.cell .code id="xHIAk_LTOvlJ"}
+```{r}
+data$Date.Time <- as.POSIXct(data$Date.Time, format="%m/%d/%Y %H:%M:%S")
+data$Time <- format(as.POSIXct(data$Date.Time, format = "%m/%d/%Y %H:%M:%S"), format="%H:%M:%S")
+data$Date.Time <- ymd_hms(data$Date.Time)
+```
+:::
+
+::: {.cell .code id="SiERfiuCQEJp"}
+```{r}
+# Create individual columns for month day and year
+data$day <- factor(day(data$Date.Time))
+data$month <- factor(month(data$Date.Time, label=TRUE))
+data$year <- factor(year(data$Date.Time))
+data$dayofweek <- factor(wday(data$Date.Time, label=TRUE))
+```
+:::
+
+::: {.cell .code id="lTMgg3xaRfz-"}
+```{r}
+# Add Time variables as well
+data$second = factor(second(hms(data$Time)))
+data$minute = factor(minute(hms(data$Time)))
+data$hour = factor(hour(hms(data$Time)))
+```
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":286}" id="aHgRn1j4RlGb" outputId="ef07434f-7132-418b-afce-3e7f3677d0a7"}
+```{r}
+#Looking at the data
+head(data)
+```
+
+::: {.output .display_data}
+
+
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":1000}" id="YWyaBUoN-Enk" outputId="d84f895f-9003-4240-d893-96927b957301"}
+```{r}
+day_data <- data %>% group_by(day) %>% dplyr::summarize(Trips = n())
+day_data
+```
+
+
+
+::: {.cell .code id="JoAv9fRR-Oz6"}
+```{r}
+#Month data
+month_data <- data %>% group_by(month) %>% dplyr::summarize(Total = n())
+
+month_data
+```
+:::
+
+::: {.cell .code id="HHF14mDp-mvq"}
+```{r}
+# Collect data by day of the week and month
+
+day_month_data <- data %>% group_by(dayofweek, month) %>% dplyr::summarize(Trips = n())
+day_month_data
+```
+:::
+
+::: {.cell .markdown id="LojLVDV-R7f1"}
+#Plotting of the data Now we shall be using data visualization to plot
+the data in various forms.
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":437}" id="Eo-OkJwl98yf" outputId="1d01534c-b7ea-4cc5-cac1-ef5f5debf117"}
+```{r}
+ggplot(day_data, aes(day, Trips)) +
+geom_bar(stat="identity",
+         fill="steelblue",
+         color="red") +
+ggtitle("Trips Every Hour", subtitle = "aggregated today") +
+theme(legend.position = "none",
+      plot.title = element_text(hjust = 0.5),
+      plot.subtitle = element_text(hjust = 0.5)) +
+# scale_y_continuous(labels=comma)
+  xlab("Hours")
+  ylab("Trips")
+```
+
+:::
+:::
+
+::: {.cell .markdown id="WrIDY5VIASmK"}
+## Explaination of this bar chart
+
+1.  X-axis - The horizontal axis represents different hours of the day.
+    It\'s labeled from 0 to 23, which corresponds to a 24-hour clock
+    format, beginning at midnight and ending at 11 PM.
+2.  Y - axis - The vertical axis shows the total number of trips, which
+    are labeled with numbers that appear to be in the thousands.
+3.  Bar characteristics - Each bar represents the total number of trips
+    that were recorded for a given hour of the day. The bars are filled
+    with a steel blue color and outlined in red, as specified in the
+    code.
+4.  Data trends
+    1.  There is a period during the early hours (midnight to around 5
+        AM) where the number of trips is relatively low.
+    2.  The number of trips begins to increase starting from the early
+        morning hours, peaking in the evening (possibly around 6 PM to 9
+        PM). This could indicate rush hour traffic or a popular time for
+        people to use the service.
+    3.  After the peak, the number of trips declines but remains
+        relatively higher than the early morning hours until it dips
+        again late at night.
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":437}" id="Eb7GdeG6_Nas" outputId="0ee27f4a-c96e-4592-c093-541de21920b5"}
+```{r}
+# Aggregate the data by month and hour
+month_hour_data <- data %>%
+  group_by(month, hour) %>%
+  dplyr::summarize(Total = n(), .groups = 'drop')  # Ensure .groups is set to 'drop' for cleaner output
+
+# Create a plot that mimics a histogram using geom_col
+ggplot(month_hour_data, aes(x=hour, y=Total, fill=factor(month))) +
+  geom_col() +  # Using geom_col which is recommended over geom_bar(stat="identity")
+  ggtitle("Trips by Hour and Month") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(fill="Month", x="Hour", y="Total Trips") +
+  theme_minimal()  # Optional: Enhances the visual appeal of the plot
+
+```
+
+::: {.output .display_data}
+![](vertopal_7675f969a65a44fd81afdbf4ef32d206/82a8849742010ed8d3d187a6b410706947fbf29b.png){height="420"
+width="420"}
+:::
+:::
+
+::: {.cell .markdown id="qdVmtX4LQrze"}
+## Explaination of the bar chart
+
+1.  X-axis - This axis represents hours of the day, likely in a 24-hour
+    format, going from 0 to 23.
+2.  Y-axis - This axis indicates the total number of trips, with the
+    scale suggesting a range that extends into hundreds of thousands.
+3.  Bar segments - Each bar is segmented into different colors, each of
+    which represents data for a particular month from April to
+    September, as shown in the legend. The height of each segment within
+    a bar corresponds to the number of trips taken during that
+    particular hour in that specific month.
+4.  This visualization could help in identifying trends over time. For
+    instance, if the bars get taller over consecutive months, it
+    indicates an increasing trend in the total number of trips.
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":437}" id="H6bef0ad-ANE" outputId="fdbf8994-e4d5-48ab-db1b-c4674d7bca5d"}
+```{r}
+# Plot the data for the day
+ggplot(day_data, aes(day, Trips)) +
+geom_bar(stat = "identity", fill = "steelblue") +
+ggtitle("Trips by day of the month") +
+theme(legend.position = "none") +
+#scale_y_continuous(ylabs = "Trips")
+  ylab("Trips")
+```
+
+::: {.output .display_data}
+![](vertopal_7675f969a65a44fd81afdbf4ef32d206/dbff00295cfcd6620ae9ffe225d2c0e1e18df9f1.png){height="420"
+width="420"}
+:::
+:::
+
+::: {.cell .markdown id="RTY-PoTTWHXm"}
+## Explanation of the graph
+
+1.  X-axis - The horizontal axis is labeled with numbers from 1 to 31,
+    indicating the days of the month.
+2.  Y-axis - he vertical axis shows the number of trips, and the scale
+    is labeled with numbers that go up in increments, which seem to
+    indicate tens of thousands of trips.
+3.  Bars - Each vertical bar\'s height represents the total number of
+    trips taken on that day of the month. The uniform color
+    \"steelblue\" is used for all bars, focusing the attention on the
+    height differences rather than on differentiating between
+    categories.
+4.  Insights:
+    1.  The bars\' varying heights suggest fluctuations in the number of
+        trips from day to day within the month.
+    2.  The viewer can identify which days had the highest and lowest
+        numbers of trips.
+    3.  The chart may be used to observe patterns or anomalies in daily
+        trips, such as weekly cycles or days with unusually high or low
+        activity.
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":437}" id="_D9ahUJN_H9m" outputId="58509a5a-4ea6-475f-fe0c-5b40000c8e81"}
+```{r}
+# Plot the above data
+ggplot(day_month_data, aes(dayofweek, Trips, fill = month)) +
+geom_bar(stat = "identity", aes(fill = month), position = "dodge") +
+ggtitle("Trias by Day and Month") +
+# scale_y_continuous(labels = comma) +
+  ylab("Trips") +
+scale_fill_manual(values = colors)
+```
+
+::: {.output .display_data}
+![](vertopal_7675f969a65a44fd81afdbf4ef32d206/104cec00cc334a70793105ef27c8828bfe9d4175.png){height="420"
+width="420"}
+:::
+```{r}
+day_month_data <- data.frame(
+  dayofweek = rep(c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), each = 3),
+  month = rep(c("January", "February", "March"), times = 5),
+  Trips = sample(100:500, 15, replace = TRUE)
+)
+
+# Specified colors
+colors = c("#CC1011", "#665555", "#05a399", "#cfcaca", "#f5e840", "#0683c9", "#e075b0")
+
+ggplot(day_data, aes(x = "", y = Trips, fill = factor(day))) +
+  geom_bar(width = 1, stat = "identity") + 
+  coord_polar(theta = "y") +
+  ggtitle("Trips by day of the month") +
+  theme_void() +  # Removes background elements for clarity in a pie chart
+  labs(fill = "Day")  
+```
+
+This is a pie chart which depicts trips by day.
+
+::: {.cell .markdown id="pKh1E_v1SRoY"}
+## Explanation of the graph {#explanation-of-the-graph}
+
+1.  X-axis - The categories along the horizontal axis represent the days
+    of the week, from Sunday through Saturday.
+2.  Y-axis - The vertical axis quantifies the number of trips, and it
+    appears to be in the range of tens of thousands, as indicated by the
+    label \"50,000\", \"100,000\".
+3.  Bars - Each bar\'s height corresponds to the total number of trips
+    for a given day of the week within a particular month. The bars are
+    grouped by day, allowing for easy comparison across months.
+4.  Colors in the legend - The different colors within each group of
+    bars represent different months, with each color corresponding to a
+    month as explained in the chart legend. This allows viewers to
+    compare the number of trips across different months but on the same
+    day of the week.
+5.  Insights
+    1.  Weekly Patterns: By examining the height of the bars, one can
+        determine which days of the week are generally busiest or
+        slowest across different months.
+    2.  Monthly Patterns: The chart may reveal monthly trends, such as
+        whether trips increase or decrease during specific months.
+    3.  Day-to-Month Relation: There may be patterns that show certain
+        days are consistently busier or quieter across all months, or
+        there might be unique patterns within specific months.
+:::
+
+::: {.cell .markdown id="lGerLVWYYAjG"}
+## Conclusions
+
+1.  In 1st graph, roughly around 4:30 to 6 pm, the demand of cabs is
+    quite high as maybe the working population go back to their home
+    after their shifts.
+2.  In 2nd graph, if we calculate the total cabs booked in all months,
+    around 6pm is the busiest hour.
+3.  In 3rd graph, 30th and 11th are the busiest days for Uber as they
+    have the highest booking on these days.
+4.  In 4th graph, we get to know that the demand of cabs increase
+    gradually as the month passes. By this, we can see September on
+    every day of the week has highest demand.
+:::
